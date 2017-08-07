@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>YM form test</title>
+    <link rel="stylesheet" href="main.css">
+</head>
+<body>
+<div>
+    <form id="myForm">
+        <fieldset>
+            <div>
+                <label for="fio">ФИО</label>
+                <input type="text" name="fio">
+            </div>
+            <div>
+                <label for="email">Email</label>
+                <input type="email" name="email">
+            </div>
+            <div>
+                <label for="phone">Телефон</label>
+                <input type="phone" name="phone">
+            </div>
+        </fieldset>
+        <button id="submitButton"
+                type="button"
+                action="api/error.json"
+                formmethod="POST">
+            Отправить
+        </button>
+    </form>
+</div>
+<div id="resultContainer">
+</div>
+<script src="./index.js"></script>
+</body>
+</html>

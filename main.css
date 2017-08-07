@@ -1,0 +1,32 @@
+.error {
+    border: 1px solid red;
+}
+
+.success {
+    border: 1px solid green;
+}
+
+.progress {
+    width: 100%;
+    height: 20px;
+    border: 1px solid #FFCE00;
+    border-radius: 3px;
+    background-image: repeating-linear-gradient(
+            -45deg,
+            #FFCE00,
+            #FFCE00 11px,
+            #000 10px,
+            #000 20px /* determines size */
+    );
+    background-size: 28px 28px;
+    animation: move .5s linear infinite;
+}
+
+@keyframes move {
+    0% {
+        background-position: 0 0;
+    }
+    100% {
+        background-position: 28px 0;
+    }
+}
