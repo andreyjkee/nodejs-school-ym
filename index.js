@@ -7,11 +7,11 @@ const FieldNameEnum = {
 
 class Validators {
 
-    static isPhoneValid(value) {
+    static isPhoneValid(value, maxSum) {
         if (!value) {
             return false;
         }
-        if (Validators.getNumbersSumFromString(value) > 30) {
+        if (Validators.getNumbersSumFromString(value) > (maxSum || 30)) {
             return false;
         }
         const phoneRegexp = /^\+7\(\d{3}\)\d{3}\-\d{2}\-\d{2}$/;
@@ -29,10 +29,16 @@ class Validators {
         if (!value) {
             return false;
         }
-        const allowedDomains = ['ya.ru', 'yandex.ru', 'yandex.ua', 'yandex.by', 'yandex.kz', 'yandex.com'];
         const isValidMail = /^([\w\!\#$\%\&\'\*\+\-\/\=\?\^\`{\|\}\~]+\.)*[\w\!\#$\%\&\'\*\+\-\/\=\?\^\`{\|\}\~]+@((((([a-z0-9]{1}[a-z0-9\-]{0,62}[a-z0-9]{1})|[a-z])\.)+[a-z]{2,6})|(\d{1,3}\.){3}\d{1,3}(\:\d{1,5})?)$/i.test(value);
-        const isValidDomain = allowedDomains.filter((el) => value.endsWith(el)).length === 1;
-        return isValidMail && isValidDomain;
+        return isValidMail && this.isYandexMail(value);
+    }
+
+    static isYandexMail(value) {
+        if (!value) {
+            return false;
+        }
+        const allowedDomains = ['ya.ru', 'yandex.ru', 'yandex.ua', 'yandex.by', 'yandex.kz', 'yandex.com'];
+        return allowedDomains.filter((el) => value.endsWith(el)).length === 1
     }
 
     static getNumbersSumFromString(value) {
@@ -53,13 +59,23 @@ class Field {
     isValid() {
         switch (this.name) {
             case FieldNameEnum.FIO:
-                return Validators.isFullNameValid(this.value);
+                return {
+                    valid: Validators.isFullNameValid(this.value),
+                    message: 'Некорректо введены ФИО'
+                };
             case FieldNameEnum.MAIL:
-                return Validators.isEmailValid(this.value);
+                return {
+                    valid: Validators.isEmailValid(this.value),
+                    message: 'Некорректный email адрес'
+                };
             case FieldNameEnum.PHONE:
-                return Validators.isPhoneValid(this.value);
+                const maxSum = 30;
+                return {
+                    valid: Validators.isPhoneValid(this.value, maxSum),
+                    message: `Телефон должен иметь формат +7(123)123-45-67 и сумма цифр не должна превышать ${maxSum}`
+                };
             default:
-                return true;
+                return {valid: true};
         }
     }
 
@@ -82,11 +98,7 @@ class Field {
 
     updateValidity() {
         const element = this.__getElementByName(this.name);
-        if (this.isValid()) {
-            element.classList.remove('error');
-        } else {
-            element.classList.add('error');
-        }
+        this.isValid().valid ? element.classList.remove('error') : element.classList.add('error');
     }
 
     __getElementByName(name) {
@@ -113,7 +125,7 @@ class Form {
 
     validate() {
         const errorFields = this.fields.filter((field) => {
-            return !field.isValid();
+            return !field.isValid().valid;
         }).map((element) => {
             return element.name;
         });
@@ -145,7 +157,7 @@ class Form {
             const data = new FormData();
             data.append('json', JSON.stringify(this.getData()));
             this.setSubmitButtonDisabled(true);
-            fetch(event.target.getAttribute('action'),
+            fetch(Form.getSubmitUrl(),
                   {
                       method: event.target.getAttribute('formmethod'),
                       body: data
@@ -183,11 +195,6 @@ class Form {
         })
     }
 
-    __getSubmitUrl() {
-        const button = document.getElementById('submitButton');
-        return button.getAttribute('action');
-    }
-
     updateValidity() {
         for (const field of this.fields) {
             field.updateValidity();
@@ -198,6 +205,14 @@ class Form {
         const button = document.getElementById('submitButton');
         button.disabled = disabled;
     }
+
+    static getSubmitUrl() {
+        const form = document.getElementById('myForm');
+        if (!form) {
+            throw new Error('Can\'t find form with id=myForm');
+        }
+        return form.getAttribute('action');
+    };
 
     __onSuccess(json) {
         const resultContainer = document.getElementById('resultContainer');
