@@ -2,7 +2,7 @@ const FieldNameEnum = {
     FIO: 'fio',
     MAIL: 'email',
     PHONE: 'phone',
-}
+};
 
 
 class Validators {
@@ -39,7 +39,6 @@ class Validators {
         if (typeof value !== 'string') {
             throw new Error('Value must be String type');
         }
-        ;
         return value.replace(/\D/g, '').split('').map((el) => Number(el)).reduce((a, b) => a + b, 0);
     }
 }
@@ -99,7 +98,6 @@ class Field {
         } else {
             throw new Error(`Can't find element by name ${name}, form constructor invalid`);
         }
-        ;
     }
 }
 
@@ -156,14 +154,16 @@ class Form {
                     (response) => {
                         return response.json();
                     }).then((json) => {
-                console.log(json);
                 switch (json.status) {
                     case 'success':
                         this.__onSuccess();
+                        break;
                     case 'error':
                         this.__onError(json);
+                        break;
                     case 'progress':
                         this.__onProgress(json, event);
+                        break;
                 }
                 this.setSubmitButtonDisabled(false);
             });
@@ -224,9 +224,9 @@ class Form {
 }
 
 const MyForm = new Form([
-    {name: 'fio', label: 'FIO'},
-    {name: 'email', label: 'EMAIL'},
-    {name: 'phone', label: 'PHONE'}]);
+    {name: FieldNameEnum.FIO, label: 'FIO'},
+    {name: FieldNameEnum.MAIL, label: 'EMAIL'},
+    {name: FieldNameEnum.PHONE, label: 'PHONE'}]);
 
 document.addEventListener(
     'DOMContentLoaded',
@@ -254,7 +254,6 @@ const changeEventHandler = (event) => {
 
 console.assert(Validators.getNumbersSumFromString('+7(222)444-55-66') === 47);
 console.assert(Validators.getNumbersSumFromString('+7(111)222-33-11') === 24);
-console.log(MyForm);
 MyForm.setData({fio: 'Ivanov Ivan Ivanovich', phone: '+7(111)111-11-11', email: 'aa@ya.ru'});
 const data = MyForm.getData();
 console.assert(data.fio === 'Ivanov Ivan Ivanovich');
