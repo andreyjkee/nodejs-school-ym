@@ -8,18 +8,32 @@
 <body>
 <div>
     <form id="myForm" action="api/error.json">
+        <div id="form_errors">
+        </div>
         <fieldset>
             <div>
-                <label for="fio">ФИО</label>
-                <input name="fio" id="fio">
+                <div>
+                    <label for="fio">ФИО</label>
+                </div>
+                <div>
+                    <input name="fio" id="fio">
+                </div>
             </div>
             <div>
-                <label for="email">Email</label>
-                <input type="email" name="email" id="email">
+                <div>
+                    <label for="email">Email</label>
+                </div>
+                <div>
+                    <input type="email" name="email" id="email">
+                </div>
             </div>
             <div>
-                <label for="phone">Телефон</label>
-                <input type="tel" name="phone" id="phone">
+                <div>
+                    <label for="phone">Телефон</label>
+                </div>
+                <div>
+                    <input type="tel" name="phone" id="phone">
+                </div>
             </div>
         </fieldset>
         <button id="submitButton"

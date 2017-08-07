@@ -7,6 +7,28 @@ const FieldNameEnum = {
 
 class Validators {
 
+    static getNumbersSumFromString(value) {
+        if (typeof value !== 'string') {
+            throw new Error('Value must be String type');
+        }
+        return value.replace(/\D/g, '').split('').map((el) => Number(el)).reduce((a, b) => a + b, 0);
+    }
+
+    static isEmailValid(value) {
+        if (!value) {
+            return false;
+        }
+        const isValidMail = /^([\w\!\#$\%\&\'\*\+\-\/\=\?\^\`{\|\}\~]+\.)*[\w\!\#$\%\&\'\*\+\-\/\=\?\^\`{\|\}\~]+@((((([a-z0-9]{1}[a-z0-9\-]{0,62}[a-z0-9]{1})|[a-z])\.)+[a-z]{2,6})|(\d{1,3}\.){3}\d{1,3}(\:\d{1,5})?)$/i.test(value);
+        return isValidMail && this.isYandexMail(value);
+    }
+
+    static isFullNameValid(value) {
+        if (!value) {
+            return false;
+        }
+        return value.match(/\S+/g).length === 3;
+    }
+
     static isPhoneValid(value, maxSum) {
         if (!value) {
             return false;
@@ -18,21 +40,6 @@ class Validators {
         return phoneRegexp.test(value);
     }
 
-    static isFullNameValid(value) {
-        if (!value) {
-            return false;
-        }
-        return value.match(/\S+/g).length === 3;
-    }
-
-    static isEmailValid(value) {
-        if (!value) {
-            return false;
-        }
-        const isValidMail = /^([\w\!\#$\%\&\'\*\+\-\/\=\?\^\`{\|\}\~]+\.)*[\w\!\#$\%\&\'\*\+\-\/\=\?\^\`{\|\}\~]+@((((([a-z0-9]{1}[a-z0-9\-]{0,62}[a-z0-9]{1})|[a-z])\.)+[a-z]{2,6})|(\d{1,3}\.){3}\d{1,3}(\:\d{1,5})?)$/i.test(value);
-        return isValidMail && this.isYandexMail(value);
-    }
-
     static isYandexMail(value) {
         if (!value) {
             return false;
@@ -40,20 +47,42 @@ class Validators {
         const allowedDomains = ['ya.ru', 'yandex.ru', 'yandex.ua', 'yandex.by', 'yandex.kz', 'yandex.com'];
         return allowedDomains.filter((el) => value.endsWith(el)).length === 1
     }
-
-    static getNumbersSumFromString(value) {
-        if (typeof value !== 'string') {
-            throw new Error('Value must be String type');
-        }
-        return value.replace(/\D/g, '').split('').map((el) => Number(el)).reduce((a, b) => a + b, 0);
-    }
 }
 
 
 class Field {
-    constructor(name, label) {
+    constructor(form, name, label) {
+        this.form = form;
         this.name = name;
         this.label = label;
+    }
+
+    get value() {
+        const element = this.__getElementByName(this.name);
+        if (!element) {
+            throw new Error(`Can't find form element with name: ${this.name}`);
+        }
+        return element.value;
+    }
+
+    set value(value) {
+        const element = this.__getElementByName(this.name);
+        if (!element) {
+            throw new Error(`Can't find form element with name: ${this.name}`);
+        }
+        element.value = value;
+        this.updateValidity();
+    }
+
+    __getElementByName(name) {
+        const elements = document.getElementsByName(name);
+        if (elements.length === 1) {
+            return elements[0];
+        } else if (elements.length > 1) {
+            throw new Error(`Find more than one element with name ${name}, form invalid`);
+        } else {
+            throw new Error(`Can't find element by name ${name}, form constructor invalid`);
+        }
     }
 
     isValid() {
@@ -79,36 +108,12 @@ class Field {
         }
     }
 
-    get value() {
-        const element = this.__getElementByName(this.name);
-        if (!element) {
-            throw new Error(`Can't find form element with name: ${this.name}`);
-        }
-        return element.value;
-    }
-
-    set value(value) {
-        const element = this.__getElementByName(this.name);
-        if (!element) {
-            throw new Error(`Can't find form element with name: ${this.name}`);
-        }
-        element.value = value;
-        this.updateValidity();
-    }
-
     updateValidity() {
         const element = this.__getElementByName(this.name);
-        this.isValid().valid ? element.classList.remove('error') : element.classList.add('error');
-    }
-
-    __getElementByName(name) {
-        const elements = document.getElementsByName(name);
-        if (elements.length === 1) {
-            return elements[0];
-        } else if (elements.length > 1) {
-            throw new Error(`Find more than one element with name ${name}, form invalid`);
-        } else {
-            throw new Error(`Can't find element by name ${name}, form constructor invalid`);
+        const result = this.isValid();
+        result.valid ? element.classList.remove('error') : element.classList.add('error');
+        if (!result.valid && result.message) {
+            this.form.addErrorMessage(result.message);
         }
     }
 }
@@ -120,16 +125,57 @@ class Form {
         if (!fields || !Array.isArray(fields)) {
             throw new Error('You need to pass fields array to Form class constructor');
         }
+        this.error_messages = [];
         this.__setFields(fields);
     }
 
-    validate() {
-        const errorFields = this.fields.filter((field) => {
-            return !field.isValid().valid;
-        }).map((element) => {
-            return element.name;
-        });
-        return {isValid: !errorFields.length, errorFields}
+    static getSubmitUrl() {
+        const form = document.getElementById('myForm');
+        if (!form) {
+            throw new Error('Can\'t find form with id=myForm');
+        }
+        return form.getAttribute('action');
+    };
+
+    __getField(name) {
+        return this.fields.find((element) => {
+            return element.name === name;
+        })
+    }
+
+    __onError(json) {
+        const resultContainer = document.getElementById('resultContainer');
+        resultContainer.innerHTML = json.reason;
+        resultContainer.className = '';
+        resultContainer.classList.add(json.status);
+    }
+
+    __onProgress(json, event) {
+        if (!event.target.classList.contains(json.status)) {
+            event.target.className = '';
+            event.target.classList.add(json.status);
+        }
+        setTimeout(() => this.submit(event), json.timeout);
+    }
+
+    __onSuccess(json) {
+        const resultContainer = document.getElementById('resultContainer');
+        resultContainer.innerHTML = 'Success';
+        resultContainer.className = '';
+        resultContainer.classList.add(json.status);
+    }
+
+    __setFields(fields) {
+        this.fields = [];
+        for (const field of fields) {
+            this.fields.push(new Field(this, field.name, field.label));
+        }
+    }
+
+    addErrorMessage(message) {
+        if (this.error_messages.indexOf(message) < 0) {
+            this.error_messages.push(message);
+        }
     }
 
     getData() {
@@ -151,6 +197,11 @@ class Form {
         }
     }
 
+    setSubmitButtonDisabled(disabled) {
+        const button = document.getElementById('submitButton');
+        button.disabled = disabled;
+    }
+
     submit(event) {
         this.updateValidity();
         if (!this.validate().isValid) {
@@ -158,10 +209,10 @@ class Form {
             data.append('json', JSON.stringify(this.getData()));
             this.setSubmitButtonDisabled(true);
             fetch(Form.getSubmitUrl(),
-                  {
-                      method: event.target.getAttribute('formmethod'),
-                      body: data
-                  })
+                {
+                    method: event.target.getAttribute('formmethod'),
+                    body: data
+                })
                 .then(
                     (response) => {
                         return response.json();
@@ -182,58 +233,35 @@ class Form {
         }
     }
 
-    __setFields(fields) {
-        this.fields = [];
-        for (const field of fields) {
-            this.fields.push(new Field(field.name, field.label));
+    updateMessages() {
+        const errorsDiv = document.getElementById('form_errors');
+        while (errorsDiv.firstChild) {
+            errorsDiv.removeChild(errorsDiv.firstChild);
         }
-    }
-
-    __getField(name) {
-        return this.fields.find((element) => {
-            return element.name === name;
-        })
+        if (this.error_messages.length > 0) {
+            for (const message of this.error_messages) {
+                const div = document.createElement('div');
+                div.innerHTML = message;
+                document.getElementById('form_errors').appendChild(div);
+            }
+        }
     }
 
     updateValidity() {
+        this.error_messages = [];
         for (const field of this.fields) {
             field.updateValidity();
         }
+        this.updateMessages();
     }
 
-    setSubmitButtonDisabled(disabled) {
-        const button = document.getElementById('submitButton');
-        button.disabled = disabled;
-    }
-
-    static getSubmitUrl() {
-        const form = document.getElementById('myForm');
-        if (!form) {
-            throw new Error('Can\'t find form with id=myForm');
-        }
-        return form.getAttribute('action');
-    };
-
-    __onSuccess(json) {
-        const resultContainer = document.getElementById('resultContainer');
-        resultContainer.innerHTML = 'Success';
-        resultContainer.className = '';
-        resultContainer.classList.add(json.status);
-    }
-
-    __onError(json) {
-        const resultContainer = document.getElementById('resultContainer');
-        resultContainer.innerHTML = json.reason;
-        resultContainer.className = '';
-        resultContainer.classList.add(json.status);
-    }
-
-    __onProgress(json, event) {
-        if (!event.target.classList.contains(json.status)) {
-            event.target.className = '';
-            event.target.classList.add(json.status);
-        }
-        setTimeout(() => this.submit(event), json.timeout);
+    validate() {
+        const errorFields = this.fields.filter((field) => {
+            return !field.isValid().valid;
+        }).map((element) => {
+            return element.name;
+        });
+        return {isValid: !errorFields.length, errorFields}
     }
 
 }
