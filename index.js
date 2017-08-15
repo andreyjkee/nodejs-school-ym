@@ -1,4 +1,4 @@
-const MyForm = (function() {
+const MyForm = (() => {
     const FieldNameEnum = {
         FIO: 'fio',
         MAIL: 'email',
@@ -299,7 +299,12 @@ const MyForm = (function() {
     console.assert(Validators.getNumbersSumFromString('+7(222)444-55-66') === 47);
     console.assert(Validators.getNumbersSumFromString('+7(111)222-33-11') === 24);
 
-    return MyForm;
+    return {
+        validate: () => MyForm.validate(),
+        getData: () => MyForm.getData(),
+        setData: (data) => MyForm.setData(data),
+        submit: () => MyForm.submit()
+    };
 })();
 
 MyForm.setData({fio: 'Ivanov Ivan Ivanovich', phone: '+7(111)111-11-11', email: 'aa@ya.ru'});
