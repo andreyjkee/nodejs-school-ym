@@ -8,13 +8,19 @@ const bodyParser = require('body-parser');
 const path = require('path');
 const serveStatic = require('serve-static');
 
+const RESPONSE_ENUM = {
+    ERROR: 'api/error.json',
+    PROGRESS: 'api/progress.json',
+    SUCCESS: 'api/success.json'
+};
+
 app.use(bodyParser.json()); // support json encoded bodies
 app.use(bodyParser.urlencoded({ extended: true })); // support encoded bodies
 app.use(serveStatic(path.join(__dirname)));
 
 app.post('/api/users', function(req, res) {
+    const contents = fs.readFileSync(path.join(__dirname, RESPONSE_ENUM.ERROR), 'utf8');
     res.type('json');
-    const contents = fs.readFileSync(path.join(__dirname, 'api/error.json'), 'utf8');
     res.send(contents);
 });
 

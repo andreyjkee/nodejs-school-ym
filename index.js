@@ -149,12 +149,14 @@ const MyForm = (() => {
             resultContainer.innerHTML = json.reason;
             resultContainer.className = '';
             resultContainer.classList.add(json.status);
+            this.setSubmitButtonDisabled(false);
         }
 
         __onProgress(json, event) {
-            if (!event.target.classList.contains(json.status)) {
-                event.target.className = '';
-                event.target.classList.add(json.status);
+            const resultContainer = document.getElementById('resultContainer');
+            if (!resultContainer.classList.contains(json.status)) {
+                resultContainer.className = '';
+                resultContainer.classList.add(json.status);
             }
             setTimeout(() => this.submit(event), json.timeout);
         }
@@ -164,6 +166,7 @@ const MyForm = (() => {
             resultContainer.innerHTML = 'Success';
             resultContainer.className = '';
             resultContainer.classList.add(json.status);
+            this.setSubmitButtonDisabled(false);
         }
 
         __setFields(fields) {
@@ -205,7 +208,7 @@ const MyForm = (() => {
 
         submit(event) {
             this.updateValidity();
-            if (!this.validate().isValid) {
+            if (this.validate().isValid) {
                 const data = new FormData();
                 data.append('json', JSON.stringify(this.getData()));
                 this.setSubmitButtonDisabled(true);
@@ -220,7 +223,7 @@ const MyForm = (() => {
                         }).then((json) => {
                     switch (json.status) {
                         case 'success':
-                            this.__onSuccess();
+                            this.__onSuccess(json);
                             break;
                         case 'error':
                             this.__onError(json);
@@ -229,7 +232,6 @@ const MyForm = (() => {
                             this.__onProgress(json, event);
                             break;
                     }
-                    this.setSubmitButtonDisabled(false);
                 });
             }
         }
