@@ -194,7 +194,7 @@ const MyForm = (() => {
             for (const key of Object.keys(data)) {
                 if ([FieldNameEnum.PHONE, FieldNameEnum.FIO, FieldNameEnum.MAIL].indexOf(key) >= 0) {
                     const field = this.__getField(key);
-                    if (field) {
+                    if (field && typeof field === 'string') {
                         field.value = data[key];
                     }
                 }
